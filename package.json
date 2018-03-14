@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/dmeehan1968/HKAnalyser/issues"
   },
-  "homepage": "https://github.com/dmeehan1968/HKAnalyser#readme"
+  "homepage": "https://github.com/dmeehan1968/HKAnalyser#readme",
+  "dependencies": {
+    "csvtojson": "^1.1.9"
+  }
 }
