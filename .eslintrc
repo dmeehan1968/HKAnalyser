@@ -1,0 +1,22 @@
+{
+  "plugins": ["babel", "flowtype"],
+  "parser": "babel-eslint",
+  "extends": ["eslint:recommended", "plugin:jest/recommended", "plugin:flowtype/recommended"],
+  "env": {
+    node: true,
+    es6: true,
+    jest: true,
+    },
+  "parserOptions": {
+    ecmaVersion: 2017
+    },
+  "rules": {
+    "comma-dangle": ["error", "always-multiline"],
+    "no-invalid-this": "off",
+    "babel/no-invalid-this": "error",
+    "no-console": "off",
+    "semi": ["error", "never"],
+    "import/no-namespace": "off",
+    "import/no-nodejs-modules": "off",
+    }
+}

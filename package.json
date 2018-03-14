@@ -4,7 +4,11 @@
   "description": "Exploring Apple HealthKit data access and analysis",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint .",
+    "flow": "flow",
+    "sleep": "nodemon index.js sleep ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Sleep\\ Analysis\\ \\(All\\).csv sleep.json",
+    "steps": "nodemon index.js steps ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Steps\\ \\(All\\).csv steps.json",
+    "heart": "nodemon index.js heart ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Heart\\ Rate\\ \\(All\\).csv heart.json"
   },
   "repository": {
     "type": "git",
@@ -17,6 +21,26 @@
   },
   "homepage": "https://github.com/dmeehan1968/HKAnalyser#readme",
   "dependencies": {
-    "csvtojson": "^1.1.9"
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^8.2.2",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-flow": "^6.23.0",
+    "csvtojson": "^1.1.9",
+    "eslint": "^4.18.2",
+    "eslint-plugin-babel": "^4.1.2",
+    "eslint-plugin-flowtype": "^2.46.1",
+    "eslint-plugin-jest": "^21.14.1",
+    "flow-bin": "^0.67.1",
+    "flow-typed": "^2.3.0",
+    "jest-cli": "^22.4.2",
+    "nodemon": "^1.17.2"
+  },
+  "nodemonConfig": {
+    "execMap": {
+      "js": "babel-node"
+    },
+    "ext": "js"
   }
 }
