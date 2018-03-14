@@ -1,0 +1,19 @@
+{
+  "name": "hkanalyser",
+  "version": "1.0.0",
+  "description": "Exploring Apple HealthKit data access and analysis",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dmeehan1968/HKAnalyser.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dmeehan1968/HKAnalyser/issues"
+  },
+  "homepage": "https://github.com/dmeehan1968/HKAnalyser#readme"
+}
