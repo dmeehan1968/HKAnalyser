@@ -108,32 +108,36 @@ async function convert(argv) {
 
     } else if (argv.sleep) {
 
+      let count = 0
+
       // $FlowFixMe: flatMap undefined
-      // const sleepPeriods = Array.apply(null, Array(10)).flatMap((item, index) => [`sleepPeriods.${index}.start`, `sleepPeriods.${index}.end`])
-      // csv({
-      //   toArrayString: true,
-      //   headers: [
-      //     'start',
-      //     'end',
-      //     'inBed',
-      //     'asleep',
-      //     'timeToSleep',
-      //     'sleepPeriodCount',
-      //     ...sleepPeriods,
-      //   ],
-      //   colParser: {
-      //     start: (item) => new Date(item),
-      //     end: (item) => new Date(item),
-      //     inBed: item => Number(item),
-      //     alseep: item => Number(item),
-      //     timeToSleep: item => Number(item),
-      //     ...sleepPeriods.reduce((memo, period) => {
-      //       return { ...memo, [period]: (item) => new Date(item) }
-      //     }, {}),
-      //   },
-      // })
-      // .fromFile(input)
-      // .pipe(outputStream)
+      const sleepPeriods = Array.apply(null, Array(10)).flatMap((item, index) => [`sleepPeriods.${index}.start`, `sleepPeriods.${index}.end`])
+      csv({
+        headers: [
+          'start',
+          'end',
+          'inBed',
+          'asleep',
+          'timeToSleep',
+          'sleepPeriodCount',
+          ...sleepPeriods,
+        ],
+        colParser: {
+          start: (item) => new Date(item),
+          end: (item) => new Date(item),
+          inBed: item => Number(item),
+          asleep: item => Number(item),
+          timeToSleep: item => Number(item),
+          ...sleepPeriods.reduce((memo, period) => {
+            return { ...memo, [period]: (item) => new Date(item) }
+          }, {}),
+        },
+      }, {
+        objectMode: true,
+      })
+      .fromFile(argv.csv)
+      .on('data', () => process.stdout.write(`\r${++count}`))
+      .pipe(mongoStream)
 
     }
 
