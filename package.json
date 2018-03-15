@@ -6,9 +6,9 @@
   "scripts": {
     "lint": "eslint .",
     "flow": "flow",
-    "heart": "nodemon index.js --drop --heart --csv ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Heart\\ Rate\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Heart",
-    "steps": "nodemon index.js --drop --steps --csv ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Steps\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Steps",
-    "sleep": "nodemon index.js --drop --sleep --csv ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Sleep\\ Analysis\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Sleep"
+    "heart": "nodemon index.js --drop --heart ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Heart\\ Rate\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Heart",
+    "steps": "nodemon index.js --drop --steps ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Steps\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Steps",
+    "sleep": "nodemon index.js --drop --sleep ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Sleep\\ Analysis\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Sleep"
   },
   "repository": {
     "type": "git",
