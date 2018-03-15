@@ -53,15 +53,16 @@ async function convert(argv) {
       await conn.close()
     }
 
+    const outputConfig = {
+      dbURL: argv.mongodb,
+      collection: argv.collection,
+      batchSize: 1,
+    }
+
+    const mongoStream = streamToMongoDB(outputConfig)
+
     if (argv.heart) {
 
-      const outputConfig = {
-        dbURL: argv.mongodb,
-        collection: argv.collection,
-        batchSize: 1,
-      }
-
-      const mongoStream = streamToMongoDB(outputConfig)
       let count = 0
 
       csv({
@@ -85,21 +86,25 @@ async function convert(argv) {
 
     } else if (argv.steps) {
 
-      // csv({
-      //   toArrayString: true,
-      //   headers: [
-      //     'start',
-      //     'end',
-      //     'steps',
-      //   ],
-      //   colParser: {
-      //     start: item => new Date(item),
-      //     end: item => new Date(item),
-      //     steps: item => Number(item),
-      //   },
-      // })
-      // .fromFile(input)
-      // .pipe(outputStream)
+      let count = 0
+
+      csv({
+        headers: [
+          'start',
+          'end',
+          'steps',
+        ],
+        colParser: {
+          start: item => new Date(item),
+          end: item => new Date(item),
+          steps: item => Number(item),
+        },
+      }, {
+        objectMode: true,
+      })
+      .fromFile(argv.csv)
+      .on('data', () => ++count % 1000 === 0 ? process.stdout.write(`\r${count}`) : null)
+      .pipe(mongoStream)
 
     } else if (argv.sleep) {
 
