@@ -1,27 +1,70 @@
 // @flow
 
-import fs from 'fs'
 import csv from 'csvtojson'
+import { streamToMongoDB } from 'stream-to-mongo-db'
+import yargs from 'yargs'
+import { MongoClient } from 'mongodb'
 
-const type = process.argv[2]
-const input = process.argv[3]
-const output = process.argv[4]
+const argv = yargs
+  .option('drop', {
+    boolean: true,
+    describe: 'Drop the destination collection before inserting',
+  })
+  .option('mongodb', {
+    describe: 'URL of the MongoDb server, e.g. mongodb://localhost:27017/Database',
+  })
+  .option('collection', {
+    describe: 'Name of the collection, e.g. Data',
+  })
+  .option('csv', {
+    describe: 'Path to CSV file to read as input',
+  })
+  .option('heart', {
+    boolean: true,
+    describe: 'Import Heart Rate data from CSV',
+  })
+  .option('steps', {
+    boolean: true,
+    describe: 'Import Step Data from CSV',
+  })
+  .option('sleep', {
+    boolean: true,
+    describe: 'Import Sleep Data from CSV',
+  })
+  .demandOption([ 'mongodb', 'csv', 'collection' ])
+  .argv
 
-let outputStream
+convert(argv)
 
-try {
-  outputStream = fs.createWriteStream(output)
-} catch (e) {
-  console.error(`Output: '${output}' - ${e.message}`)
-  process.exit()
-}
+async function convert(argv) {
 
-try {
+  console.log(`Importing '${argv.csv}'\nto '${argv.mongodb}' '${argv.collection}' ${argv.drop ? '(dropped)' :''}`)
+  try {
 
-  switch (type) {
-    case 'heart': {
+    if (argv.drop) {
+      const conn = await MongoClient.connect(argv.mongodb)
+      const dbname = argv.mongodb.split('/').slice(-1).pop()
+      try {
+        await conn.db(dbname).collection(argv.collection).deleteMany({})
+      } catch (e) {
+        console.error(e)
+        process.exit()
+      }
+      await conn.close()
+    }
+
+    if (argv.heart) {
+
+      const outputConfig = {
+        dbURL: argv.mongodb,
+        collection: argv.collection,
+        batchSize: 1,
+      }
+
+      const mongoStream = streamToMongoDB(outputConfig)
+      let count = 0
+
       csv({
-        toArrayString: true,
         headers: [
           'start',
           'end',
@@ -30,60 +73,67 @@ try {
         colParser: {
           start: item => new Date(item),
           end: item => new Date(item),
+          heartRate: item => Number(item),
         },
+      }, {
+        objectMode: true,
       })
-      .fromFile(input)
-      .pipe(outputStream)
-      break
-    }
-    case 'steps': {
-      csv({
-        toArrayString: true,
-        headers: [
-          'start',
-          'end',
-          'steps',
-        ],
-        colParser: {
-          start: item => new Date(item),
-          end: item => new Date(item),
-        },
-      })
-      .fromFile(input)
-      .pipe(outputStream)
-      break
-    }
-    case 'sleep': {
+      .fromFile(argv.csv)
+      // .on('data', data => console.log(data))
+      .on('data', () => ++count % 1000 === 0 ? process.stdout.write(`\r${count}`) : null)
+      .pipe(mongoStream)
+
+    } else if (argv.steps) {
+
+      // csv({
+      //   toArrayString: true,
+      //   headers: [
+      //     'start',
+      //     'end',
+      //     'steps',
+      //   ],
+      //   colParser: {
+      //     start: item => new Date(item),
+      //     end: item => new Date(item),
+      //     steps: item => Number(item),
+      //   },
+      // })
+      // .fromFile(input)
+      // .pipe(outputStream)
+
+    } else if (argv.sleep) {
+
       // $FlowFixMe: flatMap undefined
-      const sleepPeriods = Array.apply(null, Array(10)).flatMap((item, index) => [`sleepPeriods.${index}.start`, `sleepPeriods.${index}.end`])
-      csv({
-        toArrayString: true,
-        headers: [
-          'start',
-          'end',
-          'inBed',
-          'asleep',
-          'timeToSleep',
-          'sleepPeriodCount',
-          ...sleepPeriods,
-        ],
-        colParser: {
-          start: (item) => new Date(item),
-          end: (item) => new Date(item),
-          ...sleepPeriods.reduce((memo, period) => {
-            return { ...memo, [period]: (item) => new Date(item) }
-          }, {}),
-        },
-      })
-      .fromFile(input)
-      .pipe(outputStream)
-      break
+      // const sleepPeriods = Array.apply(null, Array(10)).flatMap((item, index) => [`sleepPeriods.${index}.start`, `sleepPeriods.${index}.end`])
+      // csv({
+      //   toArrayString: true,
+      //   headers: [
+      //     'start',
+      //     'end',
+      //     'inBed',
+      //     'asleep',
+      //     'timeToSleep',
+      //     'sleepPeriodCount',
+      //     ...sleepPeriods,
+      //   ],
+      //   colParser: {
+      //     start: (item) => new Date(item),
+      //     end: (item) => new Date(item),
+      //     inBed: item => Number(item),
+      //     alseep: item => Number(item),
+      //     timeToSleep: item => Number(item),
+      //     ...sleepPeriods.reduce((memo, period) => {
+      //       return { ...memo, [period]: (item) => new Date(item) }
+      //     }, {}),
+      //   },
+      // })
+      // .fromFile(input)
+      // .pipe(outputStream)
+
     }
-    default: {
-      throw new Error(`'${type}' should be one of heart, steps, sleep`)
-    }
+
+  } catch(e) {
+    console.error(`'${argv.csv}' - ${e}`)
   }
 
-} catch(e) {
-  console.error(`'${input}' - ${e.message}`)
 }
