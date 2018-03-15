@@ -67,8 +67,8 @@ function importer(argv) {
       }
 
       const mongoStream = streamToMongoDB(outputConfig)
-      .on('finish', resolve)
       .on('error', reject)
+      .on('finish', resolve)
 
       if (argv.heart) {
 
@@ -88,6 +88,7 @@ function importer(argv) {
         }, {
           objectMode: true,
         })
+        .on('error', reject)
         .fromFile(argv.heart)
         // .on('data', data => console.log(data))
         .on('data', () => ++count % 1000 === 0 ? process.stdout.write(`\r${count}`) : null)
@@ -111,6 +112,7 @@ function importer(argv) {
         }, {
           objectMode: true,
         })
+        .on('error', reject)
         .fromFile(argv.steps)
         .on('data', () => ++count % 1000 === 0 ? process.stdout.write(`\r${count}`) : null)
         .pipe(mongoStream)
@@ -144,6 +146,7 @@ function importer(argv) {
         }, {
           objectMode: true,
         })
+        .on('error', reject)
         .fromFile(argv.sleep)
         .on('data', () => process.stdout.write(`\r${++count}`))
         .pipe(mongoStream)
