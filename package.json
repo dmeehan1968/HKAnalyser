@@ -8,7 +8,8 @@
     "flow": "flow",
     "heart": "nodemon importer/index.js --drop --heart ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Heart\\ Rate\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Heart",
     "steps": "nodemon importer/index.js --drop --steps ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Steps\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Steps",
-    "sleep": "nodemon importer/index.js --drop --sleep ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Sleep\\ Analysis\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Sleep"
+    "sleep": "nodemon importer/index.js --drop --sleep ~/Library/Mobile\\ Documents/com~apple~CloudDocs/Sleep\\ Analysis\\ \\(All\\).csv --mongodb mongodb://localhost:27017/HealthKit --collection Sleep",
+    "reporter": "nodemon reporter/index.js"
   },
   "repository": {
     "type": "git",
