@@ -1,4 +1,5 @@
 /node_modules/
+/flow-typed/
 /heart.json
 /sleep.json
 /steps.json
