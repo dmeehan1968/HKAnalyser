@@ -1,7 +1,6 @@
 // @flow
 
 import CSVRecordStream from './CSVRecordStream'
-import { Transform } from 'stream'
 import StreamTest from 'streamtest'
 
 // CSV : https://tools.ietf.org/html/rfc4180
@@ -11,10 +10,6 @@ describe('parse', () => {
   StreamTest.versions.forEach(version => {
 
     describe(`for ${version} streams`, () => {
-
-      it('accepts an object argument', () => {
-        expect(new CSVRecordStream({}) instanceof Transform).toBe(true)
-      })
 
       it('handles no input', () => {
         const parser = new CSVRecordStream
