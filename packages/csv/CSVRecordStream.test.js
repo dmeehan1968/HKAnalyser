@@ -5,7 +5,7 @@ import StreamTest from 'streamtest'
 
 // CSV : https://tools.ietf.org/html/rfc4180
 
-describe('parse', () => {
+describe('CSVRecordStream', () => {
 
   StreamTest.versions.forEach(version => {
 
