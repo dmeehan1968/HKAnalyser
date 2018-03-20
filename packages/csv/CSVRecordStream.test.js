@@ -1,28 +1,23 @@
 // @flow
 
-import parse from './parse'
+import CSVRecordStream from './CSVRecordStream'
 import { Transform } from 'stream'
 import StreamTest from 'streamtest'
+
+// CSV : https://tools.ietf.org/html/rfc4180
 
 describe('parse', () => {
 
   StreamTest.versions.forEach(version => {
 
     describe(`for ${version} streams`, () => {
-      it('exists', () => {
-        expect(parse).toBeDefined()
-      })
-
-      it('returns a transform stream', () => {
-        expect(parse() instanceof Transform).toBe(true)
-      })
 
       it('accepts an object argument', () => {
-        expect(parse({}) instanceof Transform).toBe(true)
+        expect(new CSVRecordStream({}) instanceof Transform).toBe(true)
       })
 
       it('handles no input', () => {
-        const parser = parse()
+        const parser = new CSVRecordStream
         StreamTest[version].fromChunks([''])
         .pipe(parser)
         .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -35,7 +30,7 @@ describe('parse', () => {
 
         it('handles a single record', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['123456789\r\n'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -50,7 +45,7 @@ describe('parse', () => {
 
         it('handles two records', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['123456789\r\nABCDEFGHI\r\n'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -70,7 +65,7 @@ describe('parse', () => {
 
         it('handles a single record', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['123456789'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -85,7 +80,7 @@ describe('parse', () => {
 
         it('handles two records', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['123456789\r\nABCDEFGHI'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -105,7 +100,7 @@ describe('parse', () => {
 
         it('handles no fields', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['\r\n'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -120,7 +115,7 @@ describe('parse', () => {
 
         it('handles two fields', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['123456789,ABCDEFGHI'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -135,7 +130,7 @@ describe('parse', () => {
 
         it('handles three fields', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['123456789,ABCDEFGHI,QWERTYIOP'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -154,7 +149,7 @@ describe('parse', () => {
 
         it('handles an empty quoted field', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['""'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -169,7 +164,7 @@ describe('parse', () => {
 
         it('handles a quoted field', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['"123456789"\r\n'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -184,7 +179,7 @@ describe('parse', () => {
 
         it('handles a quoted field, no record delimiter', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['"123456789"'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -199,7 +194,7 @@ describe('parse', () => {
 
         it('handles a quoted field followed by an unquoted field', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['"123456789",ABCDEFGHI\r\n'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -218,7 +213,7 @@ describe('parse', () => {
 
         it('handles a comma within a quoted field', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['"1234,5678"'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -233,7 +228,7 @@ describe('parse', () => {
 
         it('handles CRLF within a quoted field', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['"1234\r\n5678"'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -250,7 +245,7 @@ describe('parse', () => {
 
           function f() {
             return new Promise((resolve, reject) => {
-              const parser = parse()
+              const parser = new CSVRecordStream()
               .on('error', reject)
               .on('finish', resolve)
               StreamTest[version].fromChunks(['"1234"5678'])
@@ -268,7 +263,7 @@ describe('parse', () => {
 
         it('handles an escaped quote within a quoted field', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks(['"1234""5678"'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -285,9 +280,9 @@ describe('parse', () => {
 
       describe('options', () => {
 
-        it('doesn\t trim by default', (done) => {
+        it('doesnt trim by default', (done) => {
 
-          const parser = parse()
+          const parser = new CSVRecordStream
           StreamTest[version].fromChunks([' 1234 5678 '])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -302,7 +297,7 @@ describe('parse', () => {
 
         it('trims', (done) => {
 
-          const parser = parse({ trim: true })
+          const parser = new CSVRecordStream({ trim: true })
           StreamTest[version].fromChunks([' 1234 5678 '])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {

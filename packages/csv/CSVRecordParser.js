@@ -1,7 +1,5 @@
 // @flow
 
-import { Transform } from 'stream'
-
 const States = {
   Initial: 'Initial',
   Field: 'Field',
@@ -13,18 +11,18 @@ const States = {
 
 type State = $Keys<typeof States>
 
-type Options = {
+export type CSVRecordParserOptions = {
   trim?: boolean
 }
 
-class CSVRecordParser {
+export default class CSVRecordParser {
 
   state: State
   currentField: string
   fields: Array<string>
   trim: boolean
 
-  constructor(options?: Options = {}) {
+  constructor(options?: CSVRecordParserOptions = {}) {
     this.state = States.Initial
     this.trim = options.trim || false
   }
@@ -160,60 +158,4 @@ class CSVRecordParser {
       }
     }
   }
-}
-
-class CSVParser extends Transform {
-
-  buffer: Buffer
-  decoder: CSVRecordParser
-
-  constructor(options?: Options, streamOptions?: duplexStreamOptions) {
-    super({
-      ...streamOptions,
-      readableObjectMode: true,
-    })
-    this.buffer = Buffer.alloc(0, '', 'utf8')
-    this.decoder = new CSVRecordParser({
-      trim: false,
-      ...options,
-    })
-  }
-
-  push(chunk: Buffer | string | any): boolean {
-    return super.push(chunk)
-  }
-
-  _transform(chunk: Buffer | string, encoding: string, done: () => void) {
-
-    // $FlowFixMe
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding)
-    // $FlowFixMe
-    this.buffer = Buffer.concat([this.buffer, buffer])
-
-    try {
-      for (const ch of this.buffer.values()) {
-        if (this.decoder.push(ch)) {
-          this.push(this.decoder.get())
-        }
-      }
-      done()
-    } catch(e) {
-      // @$FlowFixMe
-      this.destroy(e)
-    }
-
-
-  }
-
-  _flush(done: Function): void {
-    if (this.decoder.finalise()) {
-      this.push(this.decoder.get())
-    }
-    done()
-  }
-
-}
-
-export default function parse(options?: Options, streamOptions?: duplexStreamOptions): CSVParser {
-  return new CSVParser(options, streamOptions)
 }
