@@ -117,7 +117,7 @@ describe('CSVObjectStream', () => {
             [ 'John', 'Smith', '21', '2018-01-01' ],
           ])
           .pipe(new CSVObjectStream({
-            transform: (object: Object): Object => {
+            transform: (object: { [string]: string }): { [string]: mixed } => {
               return {
                 ...object,
                 field3: Number(object.field3),

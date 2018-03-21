@@ -13,7 +13,7 @@ export default class CSVObjectStream extends Transform {
   header: boolean
   headers: ?Array<string>
   headerTransform: ?(Array<string>) => Array<string>
-  transform: ?(Object) => Object
+  transform: ?({ [string]: string }) => { [string]: mixed }
 
   constructor(options?: CSVObjectStreamOptions = {}, streamOptions?: duplexStreamOptions) {
     super({
@@ -25,6 +25,10 @@ export default class CSVObjectStream extends Transform {
     this.transform = options.transform || undefined
   }
 
+  push(chunk: Buffer | string | any): boolean {
+    return super.push(chunk)
+  }
+  
   _transform(chunk: Buffer | string | any, encoding: string, done: () => void) {
 
     if (Array.isArray(chunk)) {
