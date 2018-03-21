@@ -5,7 +5,7 @@ import { Transform } from 'stream'
 type CSVObjectStreamOptions = {
   header?: boolean,
   headerTransform?: (Array<string>) => Array<string>,
-  transform?: (Object) => Object,
+  transform?: ({ [string]: string }) => { [string]: mixed },
 }
 
 export default class CSVObjectStream extends Transform {
