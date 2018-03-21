@@ -3,6 +3,7 @@
 import CSVObjectStream from './CSVObjectStream'
 import { Transform } from 'stream'
 import StreamTest from 'streamtest'
+import changeCase from 'change-case'
 
 describe('CSVObjectStream', () => {
 
@@ -55,6 +56,90 @@ describe('CSVObjectStream', () => {
           }))
 
         })
+      })
+
+      describe('header', () => {
+
+        it('names fields according to header', done => {
+
+          StreamTest[version].fromObjects([
+            [ 'first', 'second', 'third' ],
+            [ '1', '2', '3' ],
+          ])
+          .pipe(new CSVObjectStream({ header: true }))
+          .pipe(StreamTest[version].toObjects((err, objects) => {
+            if (err) throw err
+            expect(objects).toEqual([
+              {
+                first: '1',
+                second: '2',
+                third: '3',
+              },
+            ])
+            done()
+          }))
+
+        })
+
+        it('converts headers to field names from options', done => {
+
+          StreamTest[version].fromObjects([
+            [ 'First Name', 'Last Name', 'Age' ],
+            [ 'John', 'Smith', '21' ],
+          ])
+          .pipe(new CSVObjectStream({
+            header: true,
+            headerTransform: (headers: Array<string>): Array<string> => {
+              return headers.map(header => changeCase.camelCase(header))
+            },
+          }))
+          .pipe(StreamTest[version].toObjects((err, objects) => {
+            if (err) throw err
+            expect(objects).toEqual([
+              {
+                firstName: 'John',
+                lastName: 'Smith',
+                age: '21',
+              },
+            ])
+            done()
+          }))
+
+        })
+
+      })
+
+      describe('converts strings according to options', () => {
+
+        it('converts strings', done => {
+
+          StreamTest[version].fromObjects([
+            [ 'John', 'Smith', '21', '2018-01-01' ],
+          ])
+          .pipe(new CSVObjectStream({
+            transform: (object: Object): Object => {
+              return {
+                ...object,
+                field3: Number(object.field3),
+                field4: new Date(object.field4),
+              }
+            },
+          }))
+          .pipe(StreamTest[version].toObjects((err, objects) => {
+            if (err) throw err
+            expect(objects).toEqual([
+              {
+                field1: 'John',
+                field2: 'Smith',
+                field3: 21,
+                field4: new Date('2018-01-01'),
+              },
+            ])
+            done()
+          }))
+
+        })
+
       })
 
     })
