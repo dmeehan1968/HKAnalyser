@@ -1,9 +1,13 @@
 // @flow
 
+import fs from 'fs'
 import csv from 'csvtojson'
 import { streamToMongoDB } from 'stream-to-mongo-db'
 import yargs from 'yargs'
 import { MongoClient } from 'mongodb'
+
+import { CSVRecordStream, CSVObjectStream } from '../packages/csv'
+import ChangeCase from 'change-case'
 
 const argv = yargs
   .option('drop', {
@@ -74,23 +78,30 @@ function importer(argv) {
 
         let count = 0
 
-        csv({
-          headers: [
-            'start',
-            'end',
-            'heartRate',
-          ],
-          colParser: {
-            start: item => new Date(item),
-            end: item => new Date(item),
-            heartRate: item => Number(item),
-          },
-        }, {
-          objectMode: true,
-        })
+        fs.createReadStream(argv.heart)
+        .pipe(new CSVRecordStream({
+          // limit: 1000,
+        }))
         .on('error', reject)
-        .fromFile(argv.heart)
-        // .on('data', data => console.log(data))
+        .pipe(new CSVObjectStream({
+          header: true,
+          headerTransform: () => {
+            return [
+              'start',
+              'finish',
+              'heartRate',
+            ]
+          },
+          transform: object => {
+            return {
+              ...object,
+              start: new Date(object.start),
+              finish: new Date(object.finish),
+              heartRate: Number(object.heartRate),
+            }
+          },
+        }))
+        .on('error', reject)
         .on('data', () => ++count % 1000 === 0 ? process.stdout.write(`\r${count}`) : null)
         .pipe(mongoStream)
 
