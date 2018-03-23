@@ -321,6 +321,22 @@ describe('CSVRecordStream', () => {
 
         })
 
+        it('limits', done => {
+
+          const parser = new CSVRecordStream({ limit: 2 })
+          StreamTest[version].fromChunks(['1\r\n2\r\n3\r\n4\r\n'])
+          .pipe(parser)
+          .pipe(StreamTest[version].toObjects((err, objects) => {
+            if (err) throw err
+            expect(objects).toEqual([
+              [ '1' ],
+              [ '2' ],
+              [ '3' ],
+            ])
+            done()
+          }))
+
+        })
       })
     })
 

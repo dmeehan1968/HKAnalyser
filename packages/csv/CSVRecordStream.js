@@ -3,17 +3,30 @@
 import { Transform } from 'stream'
 import CSVRecordParser, { type CSVRecordParserOptions } from './CSVRecordParser'
 
+type CSVRecordStreamOptions = CSVRecordParserOptions & {
+  limit?: number
+}
+
 export default class CSVRecordStream extends Transform {
 
   buffer: Buffer
   decoder: CSVRecordParser
+  limit: number
+  recordCount: number
 
-  constructor(options?: CSVRecordParserOptions, streamOptions?: duplexStreamOptions) {
+  constructor(options?: CSVRecordStreamOptions, streamOptions?: duplexStreamOptions) {
     super({
       ...streamOptions,
       readableObjectMode: true,
     })
     this.buffer = Buffer.alloc(0, '', 'utf8')
+    this.limit = 0
+    if (options) {
+      if (options.limit) {
+        this.limit = options.limit
+      }
+    }
+    this.recordCount = 0
     this.decoder = new CSVRecordParser(options)
   }
 
@@ -31,7 +44,13 @@ export default class CSVRecordStream extends Transform {
     try {
       for (const ch of this.buffer.values()) {
         if (this.decoder.push(ch)) {
-          this.push(this.decoder.get())
+          const row = this.decoder.get()
+          if (this.limit === 0 || this.recordCount++ <= this.limit) {
+              this.push(row)
+          } else {
+            this.end()
+            break
+          }
         }
       }
       done()
@@ -39,7 +58,6 @@ export default class CSVRecordStream extends Transform {
       // @$FlowFixMe
       this.destroy(e)
     }
-
 
   }
 
