@@ -1,5 +1,8 @@
 // @flow
 
+import fs from 'fs'
+import path from 'path'
+import CSVRecordStream from './CSVRecordStream'
 import CSVObjectStream from './CSVObjectStream'
 import { Transform } from 'stream'
 import StreamTest from 'streamtest'
@@ -233,6 +236,21 @@ describe('CSVObjectStream', () => {
 
         })
 
+      })
+
+      describe('read from file', () => {
+
+        it('reads test data', (done) => {
+
+          fs.createReadStream(path.resolve(__dirname, './testdata.csv'))
+          .pipe(new CSVRecordStream)
+          .pipe(new CSVObjectStream)
+          .pipe(StreamTest[version].toObjects((err, objects) => {
+            expect(objects).toHaveLength(549)
+            done()
+          }))
+
+        })
       })
     })
 
