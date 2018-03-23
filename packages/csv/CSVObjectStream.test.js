@@ -142,6 +142,98 @@ describe('CSVObjectStream', () => {
 
       })
 
+      describe('events', () => {
+
+        it('emits data event for each record', done => {
+
+          const onData = jest.fn()
+          const input = [
+            [ 'John', 'Smith', '21' ],
+            [ 'Mary', 'Smith', '18' ],
+            [ 'Granny', 'Smith', '72' ],
+          ]
+          const output = input.map(arr => {
+            return arr.reduce((memo, item, index) => {
+              return { ...memo, [`field${index+1}`]: item }
+            }, {})
+          })
+          StreamTest[version].fromObjects(input)
+          .pipe(new CSVObjectStream)
+          .on('data', onData)
+          .pipe(StreamTest[version].toObjects((err) => {
+            if (err) throw err
+            expect(onData).toHaveBeenCalledTimes(3)
+            onData.mock.calls.forEach((call, index) => {
+              expect(call).toHaveLength(1)
+              expect(call[0]).toEqual(output[index])
+            })
+            done()
+          }))
+
+        })
+
+        describe('finish', () => {
+
+          // Ensure finish/data mocks are called on next clock tick or their
+          // timestamps will remain the same and order cannot be determined
+          // https://github.com/jest-community/jest-extended#tohavebeencalledbefore
+          const timeout = msecs => () => new Promise(resolve => setTimeout(resolve, msecs))
+          const onFinish = jest.fn(timeout(1))
+          const onData = jest.fn(timeout(1))
+
+          beforeEach(() => {
+
+            // StreamTest@v1.2.3 mutates the input array, so make sure its a
+            // fresh one.
+            // Fix: https://github.com/nfroidure/streamtest/commit/a714ef161eb467aa659a61e48e01bccda2eb65b8
+            const input = [
+              [ 'John', 'Smith', '21' ],
+              [ 'Mary', 'Smith', '18' ],
+              [ 'Granny', 'Smith', '72' ],
+            ]
+
+            return new Promise((resolve, reject) => {
+
+              StreamTest[version].fromObjects(input)
+              .pipe(new CSVObjectStream)
+              .on('data', onData)
+              .on('finish', onFinish)
+              .pipe(StreamTest[version].toObjects((err, objects) => {
+                if (err) return reject(err)
+                resolve(objects)
+              }))
+
+            })
+
+          })
+
+          afterEach(() => {
+            onData.mockReset()
+            onFinish.mockReset()
+          })
+
+          it('is emitted once', () => {
+
+            expect(onFinish).toHaveBeenCalledTimes(1)
+
+          })
+
+          it('is emitted without an argument', () => {
+
+            expect(onFinish.mock.calls[0]).toHaveLength(0)
+
+          })
+
+          it('is emitted after data events', () => {
+
+            // $FlowFixMe: toHaveBeenCalledBefore not defined
+            expect(onData).toHaveBeenCalledBefore(onFinish)
+
+          })
+
+        })
+
+      })
     })
 
   })
