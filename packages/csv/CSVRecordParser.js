@@ -49,6 +49,11 @@ export default class CSVRecordParser {
             this.state = States.RecordDelimiter
             break
           }
+          case 0x0a: {  // LF
+            this.flush()
+            this.state = States.RecordDelimiter
+            return this.push(char)
+          }
           case 0x22: {  // Quote
             if (this.currentField.length < 1) {
               this.state = States.QuotedField

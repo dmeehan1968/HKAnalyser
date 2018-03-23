@@ -54,6 +54,22 @@ describe('CSVRecordStream', () => {
 
         })
 
+        it('CR optional', (done) => {
+
+          const parser = new CSVRecordStream
+          StreamTest[version].fromChunks(['123456789\nABCDEFGHI\n'])
+          .pipe(parser)
+          .pipe(StreamTest[version].toObjects((err, objects) => {
+            if (err) throw err
+            expect(objects).toEqual([
+              [ '123456789' ],
+              [ 'ABCDEFGHI' ],
+            ])
+            done()
+          }))
+
+        })
+
       })
 
       describe('2.2 optional final record delimiter', () => {
