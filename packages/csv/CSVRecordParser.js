@@ -6,7 +6,6 @@ const States = {
   QuotedField: 'QuotedField',
   AfterQuotedField: 'AfterQuotedField',
   RecordDelimiter: 'RecordDelimiter',
-  Complete: 'Complete',
 }
 
 type State = $Keys<typeof States>
@@ -27,7 +26,7 @@ export default class CSVRecordParser {
     this.trim = options.trim || false
   }
 
-  push(char: number): boolean {
+  push(char: number): ?Array<string> {
 
     switch (this.state) {
 
@@ -114,19 +113,15 @@ export default class CSVRecordParser {
       case States.RecordDelimiter: {
         switch (char) {
           case 0x0a: {
-            this.state = States.Complete
-            return true
+            return this.finalise()
           }
         }
         break
       }
 
-      case States.Complete: {
-        throw new Error('unexpected push after record complete')
-      }
     }
 
-    return false
+    return undefined
   }
 
   flush() {
@@ -139,28 +134,20 @@ export default class CSVRecordParser {
     }
   }
 
-  finalise(): boolean {
+  reset(): void {
+    this.state = States.Initial
+    this.fields = []
+    this.currentField = ''
+  }
+
+  finalise(): ?Array<string> {
+    this.flush()
     if (this.state !== States.Initial) {
-      this.flush()
-      this.state = States.Complete
-      return true
+      const fields = this.fields
+      this.reset()
+      return fields
     }
-    return false
+    return undefined
   }
 
-  get(): Array<string> {
-    switch (this.state) {
-
-      case States.Complete: {
-        const fields = this.fields
-        this.fields = []
-        this.state = States.Initial
-        return fields
-      }
-
-      default: {
-        throw new Error('get() called when incomplete')
-      }
-    }
-  }
 }
