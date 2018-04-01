@@ -256,12 +256,11 @@ describe('CSVRecordStream', () => {
 
           function f() {
             return new Promise((resolve, reject) => {
-              const parser = new CSVRecordStream()
-              .on('error', reject)
-              .on('finish', resolve)
               StreamTest[version].fromChunks(['"1234"5678'])
-              .pipe(parser)
-              .pipe(StreamTest[version].toObjects(() => undefined))
+              .pipe(new CSVRecordStream()
+                .on('error', reject)
+              )
+              .pipe(StreamTest[version].toObjects(() => resolve))
             })
           }
 
@@ -323,7 +322,7 @@ describe('CSVRecordStream', () => {
 
         it('limits', done => {
 
-          const parser = new CSVRecordStream({ limit: 2 })
+          const parser = new CSVRecordStream({ limit: 3 })
           StreamTest[version].fromChunks(['1\r\n2\r\n3\r\n4\r\n'])
           .pipe(parser)
           .pipe(StreamTest[version].toObjects((err, objects) => {
@@ -339,7 +338,5 @@ describe('CSVRecordStream', () => {
         })
       })
     })
-
   })
-
 })

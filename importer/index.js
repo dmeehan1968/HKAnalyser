@@ -7,7 +7,6 @@ import yargs from 'yargs'
 import { MongoClient } from 'mongodb'
 
 import { CSVRecordStream, CSVObjectStream } from '../packages/csv'
-import ChangeCase from 'change-case'
 
 const argv = yargs
   .option('drop', {
@@ -33,6 +32,10 @@ const argv = yargs
   })
   .option('sleep', {
     describe: 'Path to Sleep Analysis CSV input file',
+    nargs: 1,
+  })
+  .option('limit', {
+    describe: 'Maximum number of records to import',
     nargs: 1,
   })
   .conflicts('sleep', ['heart', 'steps'])
@@ -79,12 +82,11 @@ function importer(argv) {
         let count = 0
 
         fs.createReadStream(argv.heart)
-        .pipe(new CSVRecordStream({
-          // limit: 1000,
-        }))
+        .pipe(new CSVRecordStream())
         .on('error', reject)
         .pipe(new CSVObjectStream({
           header: true,
+          limit: Number(argv.limit) || 0,
           headerTransform: () => {
             return [
               'start',
@@ -102,7 +104,7 @@ function importer(argv) {
           },
         }))
         .on('error', reject)
-        .on('data', () => ++count % 1000 === 0 ? process.stdout.write(`\r${count}`) : null)
+        .on('data', (object) => ++count % 100 === 0 ? process.stdout.write(`\r${count} ${object.start}`) : null)
         .pipe(mongoStream)
 
       } else if (argv.steps) {

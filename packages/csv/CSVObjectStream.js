@@ -4,6 +4,7 @@ import { Transform } from 'stream'
 
 type CSVObjectStreamOptions = {
   header?: boolean,
+  limit?: number,
   headerTransform?: (Array<string>) => Array<string>,
   transform?: ({ [string]: string }) => { [string]: mixed },
 }
@@ -12,6 +13,8 @@ export default class CSVObjectStream extends Transform {
 
   header: boolean
   headers: ?Array<string>
+  limit: number
+  recordCount: number
   headerTransform: ?(Array<string>) => Array<string>
   transform: ?({ [string]: string }) => { [string]: mixed }
 
@@ -21,11 +24,14 @@ export default class CSVObjectStream extends Transform {
       objectMode: true,
     })
     this.header = options.header || false
+    this.limit = options.limit || 0
+    this.recordCount = 0
     this.headerTransform = options.headerTransform || undefined
     this.transform = options.transform || undefined
   }
 
   push(chunk: Buffer | string | any): boolean {
+    this.recordCount++
     return super.push(chunk)
   }
 
@@ -42,7 +48,11 @@ export default class CSVObjectStream extends Transform {
           return { ...memo, [propName]: value}
         }, {})
 
-        this.push(this.transform && this.transform(object) || object)
+        if (this.limit === 0 || this.recordCount < this.limit) {
+          this.push(this.transform && this.transform(object) || object)
+        } else {
+          this.push(null)
+        }
       }
     } else {
       throw new Error(`Unexpected chunk type, expected array, got ${typeof chunk}`)

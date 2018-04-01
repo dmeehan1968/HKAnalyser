@@ -19,51 +19,58 @@ export default class CSVRecordStream extends Transform {
       ...streamOptions,
       readableObjectMode: true,
     })
-    this.buffer = Buffer.alloc(0, '', 'utf8')
-    this.limit = 0
-    if (options) {
-      if (options.limit) {
-        this.limit = options.limit
-      }
-    }
+    this.buffer = Buffer.from('')
+    this.limit = options && options.limit ? options.limit : 0
     this.recordCount = 0
     this.decoder = new CSVRecordParser(options)
   }
 
   push(chunk: Buffer | string | any): boolean {
+    this.recordCount++
     return super.push(chunk)
   }
 
-  _transform(chunk: Buffer | string, encoding: string, done: () => void) {
+  canPush(): boolean {
+    return this.limit === 0 || this.recordCount < this.limit
+  }
 
-    // $FlowFixMe
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding)
-    // $FlowFixMe
-    this.buffer = Buffer.concat([this.buffer, buffer])
+  process(): void {
 
     try {
       for (const ch of this.buffer.values()) {
-        if (this.decoder.push(ch)) {
-          const row = this.decoder.get()
-          if (this.limit === 0 || this.recordCount++ <= this.limit) {
-              this.push(row)
+        let row
+        if ((row = this.decoder.push(ch))) {
+          if (this.canPush()) {
+            this.push(row)
           } else {
-            this.end()
+            this.push(null)
             break
           }
         }
       }
-      done()
     } catch(e) {
+      this.decoder.reset()
       // @$FlowFixMe
       this.destroy(e)
     }
 
   }
 
+  _transform(chunk: Buffer | string, encoding: string, callback: () => void) {
+
+    // $FlowFixMe
+    this.buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding)
+
+    this.process()
+
+    callback()
+  }
+
   _flush(done: Function): void {
-    if (this.decoder.finalise()) {
-      this.push(this.decoder.get())
+    let row = this.decoder.finalise()
+
+    if (row && this.canPush()) {
+      this.push(row)
     }
     done()
   }
