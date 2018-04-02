@@ -252,6 +252,36 @@ describe('CSVObjectStream', () => {
 
         })
       })
+
+      describe('limit', () => {
+
+        it ('limits output', done => {
+
+          StreamTest[version].fromObjects([
+            [ '1' ],
+            [ '2' ],
+            [ '3' ],
+            [ '4' ],
+          ])
+          .pipe(new CSVObjectStream({ limit: 3 }))
+          .pipe(StreamTest[version].toObjects((err, objects) => {
+            if (err) throw err
+            expect(objects).toEqual([
+              {
+                field1: '1',
+              },
+              {
+                field1: '2',
+              },
+              {
+                field1: '3',
+              },
+            ])
+            done()
+          }))
+
+        })
+      })
     })
 
   })
