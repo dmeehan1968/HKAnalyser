@@ -39,7 +39,6 @@ export default class CSVRecordStream extends Transform {
   }
 
   process = (respectBackPressure: boolean): void => {
-    console.log('process')
     try {
       for (const [ index, ch ] of this.buffer.entries()) {
         let row
@@ -47,12 +46,9 @@ export default class CSVRecordStream extends Transform {
           if (this.canPush()) {
             if (!this.push(row) && respectBackPressure) {
               this.buffer = this.buffer.slice(index+1)
-              console.log('pressure', this.recordCount, this.buffer.length, index)
-              this.transformLock = false
               return
             }
           } else {
-            console.log('limit exceeded')
             this.buffer = this.buffer.slice(0, 0)
             this.push(null)
             break
@@ -71,23 +67,23 @@ export default class CSVRecordStream extends Transform {
       this.destroy(e)
     }
 
-    this.transformLock = false
-
   }
 
   _read(size: number) {
     if (this.buffer.length && !this.transformLock) {
-      console.log('read', size)
-      this.transformLock = true
-      setTimeout(this.process, 1, true)
+      setImmediate(() => {
+        this.transformLock = true
+        this.process(true)
+        this.transformLock = false
+      })
     } else {
+      // $FlowFixMe
       super._read(size)
     }
   }
 
-  _transform(chunk: Buffer | string, encoding: string, callback: () => void) {
+  _transform(chunk: Buffer | string, encoding: string, callback: (err?: Error) => void) {
 
-    console.log('transform')
     this.buffer = Buffer.concat([
       this.buffer,
       // $FlowFixMe
@@ -97,6 +93,9 @@ export default class CSVRecordStream extends Transform {
     this.callback = callback
     this.transformLock = true
     this.process(true)
+    this.transformLock = false
+
+
   }
 
   _flush(done: Function): void {
