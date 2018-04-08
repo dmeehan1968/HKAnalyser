@@ -49,7 +49,6 @@ export default class CSVRecordStream extends Transform {
               return
             }
           } else {
-            this.buffer = this.buffer.slice(0, 0)
             this.push(null)
             break
           }
