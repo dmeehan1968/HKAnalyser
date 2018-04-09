@@ -4,28 +4,35 @@ import { Transform } from 'stream'
 import CSVRecordParser, { type CSVRecordParserOptions } from './CSVRecordParser'
 
 type CSVRecordStreamOptions = CSVRecordParserOptions & {
-  limit?: number
+  limit?: number,
+  respectBackPressure?: boolean,
 }
 
 export default class CSVRecordStream extends Transform {
 
-  buffer: Buffer
-  callback: ?Function
   decoder: CSVRecordParser
   limit: number
+  respectBackPressure: boolean
   recordCount: number
-  transformLock: boolean
+  currentTransform: ?{
+    buffer: Buffer,
+    callback: Function
+  }
 
   constructor(options?: CSVRecordStreamOptions, streamOptions?: duplexStreamOptions) {
     super({
       ...streamOptions,
       readableObjectMode: true,
     })
-    this.buffer = Buffer.from('')
-    this.callback = null
-    this.transformLock = false
-    this.limit = options && options.limit ? options.limit : 0
+    this.currentTransform = null
     this.recordCount = 0
+
+    this.limit = options && options.limit ? options.limit : 0
+    this.respectBackPressure =
+      options && typeof options.respectBackPressure !== 'undefined'
+      ? options.respectBackPressure
+      : true
+
     this.decoder = new CSVRecordParser(options)
   }
 
@@ -38,62 +45,59 @@ export default class CSVRecordStream extends Transform {
     return this.limit === 0 || this.recordCount < this.limit
   }
 
-  process = (respectBackPressure: boolean): void => {
-    try {
-      for (const [ index, ch ] of this.buffer.entries()) {
-        let row
-        if ((row = this.decoder.push(ch))) {
-          if (this.canPush()) {
-            if (!this.push(row) && respectBackPressure) {
-              this.buffer = this.buffer.slice(index+1)
-              return
+  process(respectBackPressure: boolean): void {
+    if (this.currentTransform != null) {
+      const buffer = this.currentTransform.buffer
+      const callback = this.currentTransform.callback
+
+      try {
+        for (const [ index, ch ] of buffer.entries()) {
+          let row
+          if ((row = this.decoder.push(ch))) {
+            if (this.canPush()) {
+              if (!this.push(row) && respectBackPressure) {
+                this.currentTransform = {
+                  buffer: buffer.slice(index+1),
+                  callback,
+                }
+                return
+              }
+            } else {
+              this.push(null)
+              break
             }
-          } else {
-            this.push(null)
-            break
           }
         }
+        callback()
+      } catch(e) {
+        this.decoder.reset()
+        callback(e)
       }
-      if (this.callback) {
-        this.callback()
-        this.callback = null
-      }
-      this.buffer = this.buffer.slice(0, 0)
-    } catch(e) {
-      this.buffer = this.buffer.slice(0, 0)
-      this.decoder.reset()
-      // @$FlowFixMe
-      this.destroy(e)
     }
 
   }
 
-  _read(size: number) {
-    if (this.buffer.length && !this.transformLock) {
-      setImmediate(() => {
-        this.transformLock = true
-        this.process(true)
-        this.transformLock = false
-      })
+  _read(size: number): void {
+    if (this.currentTransform) {
+      setImmediate(() => this.process(this.respectBackPressure))
     } else {
       // $FlowFixMe
       super._read(size)
     }
   }
 
-  _transform(chunk: Buffer | string, encoding: string, callback: (err?: Error) => void) {
+  _transform(chunk: mixed, encoding: string, callback: (err: ?Error) => void) {
 
-    this.buffer = Buffer.concat([
-      this.buffer,
+    this.currentTransform = {
       // $FlowFixMe
-      Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding),
-    ], this.buffer.length + chunk.length)
+      buffer: Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk, encoding),
+      callback: (e) => {
+        this.currentTransform = null
+        callback(e)
+      },
+    }
 
-    this.callback = callback
-    this.transformLock = true
-    this.process(true)
-    this.transformLock = false
-
+    this.process(this.respectBackPressure)
 
   }
 
