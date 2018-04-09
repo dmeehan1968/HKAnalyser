@@ -2,7 +2,6 @@
 
 import fs from 'fs'
 import path from 'path'
-import { PassThrough } from 'stream'
 
 import CSVRecordStream from './CSVRecordStream'
 import StreamTest from 'streamtest'
@@ -348,7 +347,6 @@ describe('CSVRecordStream', () => {
 
           fs.createReadStream(path.resolve(__dirname, './testdata.csv'))
           .pipe(new CSVRecordStream())
-          .pipe(new PassThrough({ objectMode: true, highWaterMark: 1 }))
           .pipe(StreamTest[version].toObjects((err, objects) => {
             expect(objects).toHaveLength(549)
             done()
@@ -357,6 +355,7 @@ describe('CSVRecordStream', () => {
         })
 
       })
+
     })
   })
 })
